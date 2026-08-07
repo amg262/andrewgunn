@@ -1,68 +1,142 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0a0a0b;
-  --panel: #101012;
-  --border: #1e1e22;
-  --text: #e7e7ea;
-  --muted: #8a8a93;
-  --accent: #4ade80;
+  --bg: #05050a;
+  --text: #eceaf3;
+  --muted: #8d8ba0;
+  --border: #23222e;
+  --gold: #ffcb70; /* the Aten rim, reused as the one accent */
+  --indigo: #6366f1; /* the Amarna shell accent */
 }
 
 @theme inline {
   --color-bg: var(--bg);
-  --color-panel: var(--panel);
-  --color-border: var(--border);
   --color-text: var(--text);
   --color-muted: var(--muted);
-  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-gold: var(--gold);
+  --color-indigo: var(--indigo);
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-* {
-  border-color: var(--border);
-}
-
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 5rem;
+html,
+body {
+  height: 100%;
 }
 
 body {
   background-color: var(--bg);
   color: var(--text);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow: hidden; /* one screen, deliberately */
+  overscroll-behavior: none;
 }
 
-/* Subtle grid backdrop */
-.bg-grid {
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 48px 48px;
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+/* Very short viewports (landscape phones) get a scrollbar rather than clipping. */
+@media (max-height: 560px) {
+  body {
+    overflow-y: auto;
+  }
 }
 
-/* Fade / rise reveal on load */
+/* ── static field ──────────────────────────────────────────────────────────
+   The Aten rendered in pure CSS: a gold hairline ring, an interior wash, and
+   an ambient glow. Sits under the canvas at all times, so it is what a visitor
+   sees with JS off, without WebGL2, or after a lost context — never a void. */
+.static-field {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      transparent calc(min(40svh, 40vw) - 1px),
+      rgba(255, 203, 112, 0.5) calc(min(40svh, 40vw)),
+      transparent calc(min(40svh, 40vw) + 1.5px)
+    ),
+    radial-gradient(circle at 50% 50%, rgba(255, 203, 112, 0.07), transparent 62%),
+    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.14), transparent 78%),
+    radial-gradient(circle at 50% 42%, rgba(10, 10, 22, 0.92), transparent 45%),
+    var(--bg);
+}
+
+/* ── content ─────────────────────────────────────────────────────────────── */
+
+/* The headline sits over the darkened disc interior; the shadow is belt-and-
+   braces so it survives a stray bright particle crossing behind it. */
+.text-glow {
+  text-shadow:
+    0 0 28px rgba(5, 5, 10, 0.95),
+    0 0 70px rgba(5, 5, 10, 0.8),
+    0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.5rem 0.95rem;
+  background: rgba(10, 10, 20, 0.55);
+  backdrop-filter: blur(6px);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.chip:hover {
+  color: var(--text);
+  border-color: rgba(255, 203, 112, 0.45);
+  background: rgba(255, 203, 112, 0.08);
+}
+
 @keyframes rise {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
 }
 
-.reveal {
-  animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+.rise {
+  animation: rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── a11y ────────────────────────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 ::selection {
-  background: rgba(74, 222, 128, 0.25);
+  background: rgba(255, 203, 112, 0.28);
   color: #fff;
 }
 
-/* Thin custom scrollbar */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: #26262b; border-radius: 6px; }
-::-webkit-scrollbar-thumb:hover { background: #34343b; }
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+  .hide-reduced {
+    display: none; /* the field is still; don't invite interaction with it */
+  }
+  * {
+    transition-duration: 1ms !important;
+  }
+}
