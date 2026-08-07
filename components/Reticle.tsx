@@ -4,10 +4,12 @@
  * The cursor, replaced by an instrument.
  *
  * A gold core ring with a gapped crosshair rides the lightly-smoothed pointer;
- * a dashed indigo ring lags well behind it and contracts while you hold. A
- * monospace readout trails the core with your position in the same coordinate
- * space the simulation uses — the page is telling you, quietly, that it is
- * taking measurements.
+ * a dashed indigo ring lags well behind it and contracts while you hold; a
+ * hairline horizon bar rolls with the disc's yaw, the way an artificial horizon
+ * does. A monospace readout trails the core with where your ray actually lands
+ * on the tilted plane — not where the cursor is on the glass — and the pitch it
+ * is being read at. The page is telling you, quietly, that it is taking
+ * measurements.
  *
  * Everything except the readout text is driven by CSS custom properties written
  * by lib/pointer, so this component renders once and never again. Fine pointers
@@ -50,7 +52,8 @@ export default function Reticle() {
         acc = 0;
         const el = readout.current;
         if (el) {
-          el.textContent = `${axis(pointer.px)} ${axis(pointer.py)}${
+          const pitch = ((pointer.tiltX * 180) / Math.PI).toFixed(1);
+          el.textContent = `${axis(pointer.dx)} ${axis(pointer.dy)} ∠${pitch}°${
             pointer.ghost > 0.5 ? " ·unattended" : ""
           }`;
         }
@@ -71,6 +74,7 @@ export default function Reticle() {
   return (
     <>
       <span className="cur cur-lag" aria-hidden="true" />
+      <span className="cur cur-horizon" aria-hidden="true" />
       <span className="cur cur-core" aria-hidden="true" />
       <span className="cur cur-read" aria-hidden="true" ref={readout} />
     </>

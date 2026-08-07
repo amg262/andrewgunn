@@ -17,13 +17,24 @@ export const profile = {
     linkedin: "https://www.linkedin.com/in/andrewmgunn",
   },
 
+  // `to` is the number the odometer counts up to on load; prefix/suffix wrap it.
+  // Split rather than stored as a string so the count-up lands on exactly the
+  // figure that server-renders — the no-JS page and the settled page agree.
   stats: [
-    { value: "10+", label: "Years full-stack" },
-    { value: "$1M+", label: "Revenue shipped" },
-    { value: "108K+", label: "Plugin downloads" },
-    { value: "1,250+", label: "Accounts scored" },
+    { to: 10, suffix: "+", label: "Years full-stack" },
+    { to: 1, prefix: "$", suffix: "M+", label: "Revenue shipped" },
+    { to: 150, suffix: "K+", label: "Plugin downloads" },
+    { to: 1250, suffix: "+", label: "Accounts scored" },
   ],
 } as const;
+
+export type Stat = (typeof profile.stats)[number];
+
+/** The settled label for a stat — also the string rendered on the server. */
+export const statText = (s: Stat, value: number = s.to) =>
+  `${"prefix" in s ? s.prefix : ""}${Math.round(value).toLocaleString("en-US")}${
+    "suffix" in s ? s.suffix : ""
+  }`;
 
 // Why the page looks like this. Amarna — Akhet-Aten — was a capital raised out
 // of empty desert in about four years to serve a single new god, the Aten: the
@@ -33,7 +44,7 @@ export const profile = {
 // it, which in the reliefs is the pharaoh and here is you.
 export const motif = {
   caption: "Akhet-Aten · the horizon of the disc",
-  hint: "Move · hold · release",
+  hint: "Move · hold · release · scroll",
 
   // Cycled one at a time under the caption. Half of these are about 1346 BCE
   // and half are about now; the point is that you cannot tell which is which.
