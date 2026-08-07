@@ -7,6 +7,22 @@
   --border: #23222e;
   --gold: #ffcb70; /* the Aten rim, reused as the one accent */
   --indigo: #6366f1; /* the Amarna shell accent */
+
+  /* Written every frame by lib/pointer. Declared here with neutral defaults so
+     the page is correct before hydration, with JS off, and under reduced
+     motion — where nothing ever writes them. */
+  --px: 50vw;
+  --py: 50vh;
+  --lx: 50vw;
+  --ly: 50vh;
+  --nx: 0;
+  --ny: 0;
+  --pforce: 0;
+  --ppress: 0;
+  --pmove: 0;
+  --pghost: 0;
+  --phot: 0;
+  --pin: 0;
 }
 
 @theme inline {
@@ -33,6 +49,19 @@ body {
   text-rendering: optimizeLegibility;
   overflow: hidden; /* one screen, deliberately */
   overscroll-behavior: none;
+}
+
+/* Holding the pointer down gathers the field; if that gesture also drags a
+   selection across the copy the page fights itself. The two things worth
+   copying opt back in. */
+main {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* Very short viewports (landscape phones) get a scrollbar rather than clipping. */
@@ -63,18 +92,120 @@ body {
     var(--bg);
 }
 
-/* ── content ─────────────────────────────────────────────────────────────── */
-
-/* The headline sits over the darkened disc interior; the shadow is belt-and-
-   braces so it survives a stray bright particle crossing behind it. */
-.text-glow {
-  text-shadow:
-    0 0 28px rgba(5, 5, 10, 0.95),
-    0 0 70px rgba(5, 5, 10, 0.8),
-    0 1px 0 rgba(255, 255, 255, 0.06);
+/* ── parallax ──────────────────────────────────────────────────────────────
+   Depth without JS: each line sets its own --depth and rides the normalised
+   cursor position off :root. Siblings rather than nested, so the offsets never
+   compound. Owns `transform`, which is why .rise animates `translate` instead —
+   the two would otherwise overwrite each other. */
+.par {
+  transform: translate3d(
+    calc(var(--nx) * var(--depth, 1) * -11px),
+    calc(var(--ny) * var(--depth, 1) * -9px),
+    0
+  );
 }
 
+/* ── the name ──────────────────────────────────────────────────────────────
+   Two stacked copies. The solid one is lit by a gradient anchored to the
+   cursor; under the cursor its fill is masked out and the hollow gold-outlined
+   copy behind shows through. Point at the name and you are chiselling it out,
+   which is precisely what was done to the man who built Amarna. */
+.headline {
+  position: relative;
+  isolation: isolate;
+  --cut: calc(var(--pforce) * 132px + 0.02px);
+}
+
+.hl-fill,
+.hl-cut,
+.hl-shade {
+  display: block;
+}
+
+.hl-shade,
+.hl-cut {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Belt and braces so the headline survives a bright particle being dragged
+   across it. Its own layer, painted under the lit copy: on the lit copy the
+   shadow would land on top of the clipped gradient and dim the whole name. */
+.hl-shade {
+  z-index: -1;
+  color: transparent;
+  text-shadow:
+    0 0 28px rgba(5, 5, 10, 0.95),
+    0 0 70px rgba(5, 5, 10, 0.8);
+}
+
+.hl-fill {
+  /* The far stop is the ordinary text colour, so an unlit letter is exactly as
+     bright as it would be without any of this — only the pool under the cursor
+     warms up. The default centre is parked far off the box for the same reason:
+     with no cursor (or reduced motion) the name is simply white. */
+  background-image: radial-gradient(
+    22rem 22rem at var(--hx, 50%) var(--hy, -999px),
+    #fff6de 0%,
+    #ffdca6 12%,
+    var(--text) 38%
+  );
+  -webkit-mask-image: radial-gradient(
+    circle var(--cut) at var(--hx, 50%) var(--hy, -999px),
+    transparent 0%,
+    transparent 52%,
+    #000 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--cut) at var(--hx, 50%) var(--hy, -999px),
+    transparent 0%,
+    transparent 52%,
+    #000 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Guarded: without background-clip the transparent fill would simply erase the
+   name, which is a worse joke than the one intended. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hl-fill {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.hl-cut {
+  color: transparent;
+  -webkit-text-stroke: 0.7px rgba(255, 203, 112, 0.85);
+  -webkit-mask-image: radial-gradient(
+    circle var(--cut) at var(--hx, 50%) var(--hy, -999px),
+    #000 0%,
+    #000 44%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--cut) at var(--hx, 50%) var(--hy, -999px),
+    #000 0%,
+    #000 44%,
+    transparent 100%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* ── links ─────────────────────────────────────────────────────────────────
+   Magnetic: the translate comes from components/Links, the light under the
+   cursor and the rim glow are driven off the per-chip --cx/--cy/--near it
+   writes. */
 .chip {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -87,10 +218,27 @@ body {
   font-size: 0.75rem;
   letter-spacing: 0.02em;
   color: var(--muted);
+  box-shadow:
+    0 0 0 1px rgba(255, 203, 112, calc(var(--near, 0) * 0.3)),
+    0 0 24px rgba(255, 203, 112, calc(var(--near, 0) * 0.16));
   transition:
     color 160ms ease,
     border-color 160ms ease,
     background-color 160ms ease;
+}
+
+.chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    6rem 6rem at var(--cx, 50%) var(--cy, 50%),
+    rgba(255, 203, 112, 0.24),
+    transparent 68%
+  );
+  opacity: var(--near, 0);
+  transition: opacity 140ms ease;
 }
 
 .chip:hover {
@@ -99,15 +247,123 @@ body {
   background: rgba(255, 203, 112, 0.08);
 }
 
+/* ── the reticle ───────────────────────────────────────────────────────────
+   Replaces the system cursor with an instrument: a gold core with a gapped
+   crosshair on the fast spring, a dashed ring lagging behind it, and a readout
+   of your position in the simulation's own coordinates. */
+.reticle-on,
+.reticle-on * {
+  cursor: none !important;
+}
+
+.cur {
+  position: fixed;
+  left: 0;
+  top: 0;
+  /* spans, so they need a box before width, height and transform mean anything */
+  display: block;
+  z-index: 60;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: var(--pin);
+  transition: opacity 260ms ease;
+}
+
+.cur-core {
+  width: 17px;
+  height: 17px;
+  margin: -8.5px 0 0 -8.5px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 213, 140, 0.9);
+  box-shadow:
+    0 0 10px rgba(255, 203, 112, 0.45),
+    inset 0 0 7px rgba(255, 203, 112, 0.25);
+  transform: translate3d(var(--px), var(--py), 0)
+    scale(calc(1 + var(--phot) * 0.85 - var(--ppress) * 0.28));
+}
+
+.cur-core::before {
+  content: "";
+  position: absolute;
+  inset: -11px;
+  background:
+    linear-gradient(
+      to right,
+      transparent calc(50% - 0.5px),
+      rgba(255, 203, 112, 0.55) calc(50% - 0.5px),
+      rgba(255, 203, 112, 0.55) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 0.5px),
+      rgba(255, 203, 112, 0.55) calc(50% - 0.5px),
+      rgba(255, 203, 112, 0.55) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
+    );
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 11px, #000 12px);
+  mask-image: radial-gradient(circle at 50% 50%, transparent 11px, #000 12px);
+  opacity: calc(0.3 + var(--pmove) * 0.7);
+}
+
+.cur-lag {
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-radius: 999px;
+  border: 1px dashed
+    rgba(150, 165, 255, calc(0.34 + var(--phot) * 0.4 + var(--ppress) * 0.35));
+  transform: translate3d(var(--lx), var(--ly), 0)
+    scale(calc(1 - var(--ppress) * 0.42 + var(--phot) * 0.18));
+  animation: reticle-spin 11s linear infinite;
+  opacity: calc(var(--pin) * (0.35 + var(--pforce) * 0.65));
+}
+
+.cur-read {
+  margin: 13px 0 0 19px;
+  transform: translate3d(var(--px), var(--py), 0);
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  color: rgba(255, 203, 112, 0.62);
+  opacity: calc(var(--pin) * min(1, var(--pmove) + var(--pghost) * 0.75));
+}
+
+@keyframes reticle-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* ── content ─────────────────────────────────────────────────────────────── */
+
+.transmission {
+  display: block;
+  font-variant-ligatures: none;
+  line-height: 1.35;
+  /* The line cycles between sentences of different lengths, and the column is
+     vertically centred — without a reserved row the whole page twitches on
+     every swap. Narrow viewports reserve two, because the longest line wraps. */
+  min-height: 1.35em;
+}
+
+@media (max-width: 640px) {
+  .transmission {
+    letter-spacing: 0.06em;
+    min-height: 2.7em;
+  }
+}
+
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    translate: 0 14px;
     filter: blur(6px);
   }
   to {
     opacity: 1;
-    transform: none;
+    translate: none;
     filter: none;
   }
 }
@@ -133,8 +389,15 @@ body {
   .rise {
     animation: none;
   }
+  .cur,
   .hide-reduced {
     display: none; /* the field is still; don't invite interaction with it */
+  }
+  .par {
+    transform: none;
+  }
+  .cur-lag {
+    animation: none;
   }
   * {
     transition-duration: 1ms !important;
