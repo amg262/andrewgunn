@@ -203,6 +203,32 @@ Verified in Chromium at 1440×900 and 390×844, plus reduced-motion, WebGL2 disa
 JS disabled: no console errors, no horizontal overflow, no lost context, and the name
 measured at full `--text` brightness everywhere outside the cursor's pool.
 
+## Where else this runs
+
+The field, the camera and the reticle have been ported into the two Amarna repos.
+They are **copies, not a shared package** — each one is adapted to a page whose
+shape is different — so anything changed here has to be carried across by hand.
+Three things are duplicated in all three repos and will drift silently if only
+one of them is edited:
+
+- **`pulseAmp()` in `lib/pointer.ts` and `pulseAt()` in the shaders.** The DOM and
+  the GPU have to agree about where a shockwave's front is, or letters ripple on a
+  wave nothing is drawing.
+- **`basis` / `project` / `unproject` in `lib/pointer.ts` and their GLSL twins.**
+  Per-frame and per-pixel versions of the same projection. If they disagree, the
+  cursor stops landing where the field thinks it landed.
+- **`ringRadius()` in the shaders and the CSS static field's radii.** The fallback
+  ring has to sit where the real one sits, or the page visibly jumps when WebGL2
+  is unavailable.
+
+| Repo | What it took, and what it left behind |
+|---|---|
+| [`amarnaorg/amarna`](https://github.com/amarnaorg/amarna) | All of it, hero-scoped. `lib/pointer.ts` gains a registerable *stage* so the cursor is normalised against the disc's box rather than the viewport, and loses the wheel dolly — that page scrolls. The headline splits into words as well as letters so a sentence can wrap. The magnetism became a wrapper that drives the design system's Button rather than owning its own chips. Everything parks on an `IntersectionObserver`; the reticle is bound to the hero, because five screens of prose is not a place to take somebody's cursor away. |
+| [`amarnaorg/amarna-video`](https://github.com/amarnaorg/amarna-video) | The field, the camera and the reticle only, behind the empty stage — and it is **disposed of the moment a show compiles**: canvas, GL objects, listeners, rAF and every custom property. The premise rows and style cards get the light but none of the lean or lift; a control that steps aside as you reach for it is a bug with a nice explanation. |
+
+Nothing came back the other way. This page is the one that gets to be all field
+and no product, which is the point of it.
+
 ## Deploy
 
 Push to `main` — Vercel builds and deploys. No env vars.
